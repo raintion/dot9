@@ -1,0 +1,98 @@
+<!DOCTYPE HTML>
+<html lang="zh_CN">
+<head>
+	<meta charset="UTF-8">
+	<title>Dot9</title>
+	<style type="text/css">
+		body {
+			margin: 0;
+			text-align: center
+		}
+
+	</style>
+</head>
+<body>
+<canvas id="dot9" width="500" height="500">Shit Happens</canvas>
+
+<output id="list"></output>
+
+<script>
+
+	var canvas = document.getElementById("dot9");
+	var context = canvas.getContext("2d");
+	var sourceImg;
+
+	function startDot9() {
+		context.beginPath();
+		context.moveTo(1, canvas.height-.5);
+		context.lineTo(canvas.width - 1, canvas.height -.5);
+		context.lineWidth = 1;
+		context.strokeStyle = "#000000";
+		context.stroke();
+		context.beginPath();
+		context.moveTo(canvas.width -.5, 1);
+		context.lineTo(canvas.width -.5, canvas.height - 1);
+		context.stroke();
+	}
+	function handleFileSelect(evt) {
+		evt.stopPropagation();
+		evt.preventDefault();
+
+		var files = evt.dataTransfer.files; // FileList object.
+
+		// files is a FileList of File objects. List some properties.
+		var output = [];
+		for (var i = 0, f; f = files[i]; i++) {
+			console.log(f);
+			output.push('<li><strong>', escape(f.name), '</strong> (', f.type || 'n/a', ') - ',
+					f.size, ' bytes, last modified: ',
+					f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a',
+					'</li>');
+
+			// Only process image files.
+			if (!f.type.match('image.*')) {
+				continue;
+			}
+
+			var reader = new FileReader();
+
+			// Closure to capture the file information.
+			reader.onload = (function (theFile) {
+				return function (e) {
+					// Render thumbnail.
+					var span = document.createElement('span');
+					span.innerHTML = ['<img class="thumb" src="', e.target.result,
+						'" title="', escape(theFile.name), '"/>'].join('');
+					document.getElementById('list').insertBefore(span, null);
+					// load image from data url
+					var imageObj = new Image();
+					imageObj.onload = function () {
+						canvas.width = this.width + 2;
+						canvas.height = this.height + 2;
+						context.drawImage(this, 1, 1);
+						startDot9();
+					};
+					imageObj.src = e.target.result;
+				};
+			})(f);
+
+			// Read in the image file as a data URL.
+			reader.readAsDataURL(f);
+		}
+		document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+	}
+
+	function handleDragOver(evt) {
+		evt.stopPropagation();
+		evt.preventDefault();
+		evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+	}
+
+	// Setup the dnd listeners.
+	canvas.addEventListener('dragover', handleDragOver, false);
+	canvas.addEventListener('drop', handleFileSelect, false);
+
+
+</script>
+</body>
+</html>
